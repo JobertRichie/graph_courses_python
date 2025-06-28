@@ -1,0 +1,338 @@
+---
+title: "Relationship between GDP per capita and under-five Child Mortality Rate (CMR) in 2023"
+author: "Jobert Richie Nansseu"
+format: dashboard
+theme: superhero
+---
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import country_converter as coco
+import itables
+import statsmodels
+
+# Load the data
+gdp = pd.read_csv("data/gdp_pcap.csv")
+child_m = pd.read_csv("data/child_mortality.csv")
+
+# Select the year 2023
+gdp_23 = gdp[["country", "2023"]]
+child_m_23 = child_m[["country", "2023"]]
+
+# Rename the column 2023 in both datasets
+gdp_23 = gdp_23.rename(columns={"2023": "GDP"})
+child_m_23 = child_m_23.rename(columns={"2023": "child_mortality"})
+
+# Replace the "M/k" in GDP values
+def convert_gdp(value):
+    if isinstance(value, str):
+        if value.endswith("M"):
+            return float(value[:-1]) * 1_000_000
+        elif value.endswith("k"):
+            return float(value[:-1]) * 1_000
+        else:
+            return float(value)
+    return value
+
+
+gdp_23["GDP"] = gdp_23["GDP"].apply(convert_gdp)
+
+# Convert GDP and child_mortality columns to numeric columns
+gdp_23["GDP"] = gdp_23["GDP"].astype(int)
+child_m_23["child_mortality"] = child_m_23["child_mortality"].astype(int)
+
+# Determine the highest GDP in 2023
+highest_gdp = gdp_23.sort_values("GDP", ascending=False).head(1).squeeze()
+highest_gdp_country = highest_gdp["country"]
+highest_gdp_value = highest_gdp["GDP"]
+
+# Determine the lowest GDP in 2023
+lowest_gdp = gdp_23.sort_values("GDP", ascending=True).head(1).squeeze()
+lowest_gdp_country = lowest_gdp["country"]
+lowest_gdp_value = lowest_gdp["GDP"]
+
+# Calculate the mean GDP in 2023
+mean_gdp = round(gdp_23["GDP"].mean(), 1)
+
+# Determine the lowest child mortality in 2023
+lowest_cm = child_m_23.sort_values("child_mortality", ascending=True).head(1).squeeze()
+lowest_cm_country = lowest_cm["country"]
+lowest_cm_value = lowest_cm["child_mortality"]
+
+# Determine the highest child mortality in 2023
+highest_cm = (
+    child_m_23.sort_values("child_mortality", ascending=False).head(1).squeeze()
+)
+highest_cm_country = highest_cm["country"]
+highest_cm_value = highest_cm["child_mortality"]
+
+# Calculate the mean child mortality rate in 2023
+mean_cm = round(child_m_23["child_mortality"].mean(), 1)
+
+# Create a map for GDP
+
+## Convert country names to iso3 codes
+gdp_23["country_code"] = coco.convert(gdp_23["country"], to="ISO3")
+
+## Build the map
+map_1 = px.choropleth(
+    gdp_23,
+    locations="country_code",
+    color="GDP",
+    hover_name="country",
+    title="Map of Countries by GDP in 2023",
+    color_continuous_scale="YlOrRd",
+).update_layout(coloraxis_showscale=False)
+
+# Create a map for child mortality
+
+## Convert country names to iso3 codes
+child_m_23["country_code"] = coco.convert(child_m_23["country"], to="ISO3")
+
+## Build the map
+map_2 = px.choropleth(
+    child_m_23,
+    locations="country_code",
+    color="child_mortality",
+    hover_name="country",
+    title="Map of Countries by under-5 child mortality rate in 2023",
+    color_continuous_scale="Turbo",
+).update_layout(coloraxis_showscale=False)
+
+# Showcase the top 20 countries with the lowest GDP in 2023
+
+## Extract the top 20 countries by GDP
+top_20_gdp = gdp_23.sort_values("GDP", ascending=True).head(20)
+
+## Build a bar plot
+plot_1 = px.bar(
+    top_20_gdp,
+    x="GDP",
+    y="country",
+    title="Top 20 countries with the lowest GDP in 2023",
+    color="GDP",
+    color_continuous_scale="Viridis",
+).update_layout(coloraxis_showscale=False)
+
+# Showcase the top 20 countries with the highest child mortality rates in 2023
+
+## Extract the top 20 countries by child mortality rates
+top_20_cm = child_m_23.sort_values("child_mortality", ascending=False).head(20)
+
+## Build a bar plot
+plot_2 = px.bar(
+    top_20_cm,
+    x="child_mortality",
+    y="country",
+    title="Top 20 countries with the worst child mortality rates in 2023",
+    color="child_mortality",
+    color_continuous_scale="Plasma",
+).update_layout(coloraxis_showscale=False)
+
+# Identify the countries of the African continent that have already met the SDG 3.2 target: under-5 child mortality rate <= 25/1000 live births
+
+## Create the column continent from country
+child_m_23["continent"] = coco.convert(names=child_m_23["country"], to="continent")
+
+## Extract the countries that have met the SDG target and filter for Africa
+sdg_met = child_m_23[child_m_23["child_mortality"] <= 25]
+
+## Extract the number of countries globally
+sdg_met_rows = sdg_met.shape[0]
+
+## Extract the African countries that have met the target and sort them by lowest
+sdg_met_a = sdg_met[sdg_met["continent"] == "Africa"]
+sdg_met_a = sdg_met_a.sort_values("child_mortality", ascending=True)
+
+## Extract the number of African countries
+sdg_met_a_rows = sdg_met_a.shape[0]
+
+## Build a map for overall countries
+map_3 = px.choropleth(
+    sdg_met,
+    locations="country_code",
+    color="child_mortality",
+    hover_name="country",
+    title="Map of Countries that have already met the SDG 3.2 target as of 2023",
+    color_continuous_scale="Plasma",
+).update_layout(coloraxis_showscale=False)
+
+## Build a bar plot for African countries
+plot_3 = px.bar(
+    sdg_met_a,
+    x="child_mortality",
+    y="country",
+    title="African countries that have already met the SDG 3.2 target as of 2023",
+    color="child_mortality",
+    color_continuous_scale="Electric",
+).update_layout(coloraxis_showscale=False)
+
+# Explore the relation between GDP and child mortality
+
+## Merge the two datasets
+gdp_cm = pd.merge(gdp_23, child_m_23, on=["country", "country_code"], how="outer")
+
+## Build a scatter plot
+plot_4 = px.scatter(
+    gdp_cm,
+    x="GDP",
+    y="child_mortality",
+    labels={
+        "GDP": "Gross Domestic Product",
+        "child_mortality": "Under-5 Child Mortality Rate/1000 live births",
+    },
+    title="Relationship between GDP and under-5 Child Mortality Rate for the year 2023",
+).update_layout(coloraxis_showscale=False)
+
+## Identify countries that are both among the top 20 with the lowest GDP and highest CMR
+top_merged = pd.merge(top_20_gdp, top_20_cm, on=["country_code", "country"],how="inner").sort_values(
+    "child_mortality", ascending=False
+)
+top_merged_rows = top_merged.shape[0]
+```
+
+# Presentation of this dashboard
+
+**The main objective of this dashboard is to explore a potential relationship/association between the Gross Domestic Product per capita and the under-5 Child Mortality Rate (CMR) per 1000 live births, worldwide**.
+
+The data used for this analysis originate from the Gapminder Foundation website available [here](https://www.gapminder.org/data/). Two indicators were selected for this analysis, including the ***GDP per capita*** and ***child mortality (0-5 year-olds dying per 1000 born)***. We limited our analysis to **the year 2023**, expecting to have the most recently updated figures.
+
+In the following page, we analyse the GDP indicator, highlighting the countries with the highest and lowest GDP as well as the mean GDP for the year 2023. In addition, we present a map showing the worldwide distribution of GDP in 2023 and a bar plot depicting the top 20 countries exhibiting the lowest GDP.
+
+The next page is dedicated to child mortality analysis. We also highlight the countries with the highest and lowest CMR as well as the mean CMR for the year 2023. Subsequently, we present a map illustrating the worldwide distribution of CMR in 2023, and present the top 20 countries with the highest CMR. 
+
+In the fourth page, we concentrate on countries that have already met the SDG 3.2 target requesting that countries must bring their CMR to not much than 25/1000 live births by the year 2030. Using a map, we present the countries that have already met the target worldwide, and using a bar plot, we put light on African countries that have met the target.
+
+The fifth page explores the relationship between GDP and CMR using a scatter plot.
+
+The last page presents the final/compiled dataset that was used for this analysis.
+
+# Global GDP distribution in 2023
+
+## Row 1 {height=30%}
+
+::: {.valuebox icon="hand-thumbs-up-fill" color="forestgreen" title="Highest GDP per capita in 2023"}
+
+`{python} str(highest_gdp_value)`
+
+`{python} highest_gdp_country`
+
+:::
+
+::: {.valuebox icon="hand-thumbs-down-fill" color="#1E90FF" title="Lowest GDP per capita in 2023"} 
+
+`{python} str(lowest_gdp_value)`
+
+`{python} lowest_gdp_country`
+
+:::
+
+::: {.valuebox icon="globe" color="#4682B4" title="Average GDP per capita in 2023"}
+
+`{python} str(mean_gdp)`
+
+:::
+
+## Row 2 {height=70%}
+
+### {width=60%}
+
+```{python}
+map_1
+```
+
+Majority of African, South-East Asian  and Latin American countries have low GDP.
+
+### {width=40%}
+
+```{python}
+plot_1
+```
+
+Sixteen of the 20 countries with the lowest GDP reside in **Afrca** while the four others are in **Asia**.
+
+# Global distribution of CMR in 2023
+
+## Row 1 {height=30%}
+
+::: {.valuebox icon="hand-thumbs-up-fill" color="forestgreen" title="Lowest Child Mortality Rate in 2023"}
+
+`{python} str(lowest_cm_value)`
+
+`{python} lowest_cm_country`
+
+:::
+
+::: {.valuebox icon="hand-thumbs-down-fill" color="#1E90FF" title="Highest Child Mortality Rate in 2023"} 
+
+`{python} str(highest_cm_value)`
+
+`{python} highest_cm_country`
+
+:::
+
+::: {.valuebox icon="globe" color="#4682B4" title="Average Child Mortality Rate in 2023"}
+
+`{python} str(mean_cm)`
+
+:::
+
+## Row 2 {height=70%}
+### {width=60%}
+
+```{python}
+map_2
+```
+
+### {width=40%}
+
+```{python}
+plot_2
+```
+
+Nineteen of these countries are in **Africa**, except from **Pakistan (Asia)**.
+
+# Countries with CMR <= 25/1000 (SDG 3.2 target)
+
+## {.tabset}
+
+### Global 
+#### {width=80%}
+```{python}
+map_3
+```
+
+#### {width=20%}
+A total of **`{python} sdg_met_rows`** countries have already met the SDG 3.2 target as of 2023, requiring that each country should bring its under-5 CMR to not much than 25 per 1000 live births by the year 2030. Worrisome, only **`{python} sdg_met_a_rows`** of the 54 African countries have already met this target. There is still a lot to be done within the seven years remaining to reach the SDG end-point year of 2030.
+
+### Africa
+#### {width=80%}
+```{python}
+plot_3
+```
+
+#### {width=20%}
+Almost all of the **`{python} sdg_met_a_rows`** African countries that have met the SDG 3.2 target are located in the Northern part of the continent. **Cabo Verde** is the only sub-Saharan African country that has met this target as of 2023. 
+
+# Relationship between GDP and CMR
+
+## {width=80%}
+```{python}
+plot_4
+```
+
+## {width=20%}
+
+The plot speaks in favor of a likely strong and negative relationship between the GDP and under-5 CMR. Hence, countries with higher GDP tend to have lower CMR and those with lower GDP tend to have higher CMR. Although this has to be confirmed through binary analysis, we anticipate that improving the country's GDP would lead to an important reduction in the under-5 CMR.
+
+Actually, when opposing the top 20 countries with the lowest GDP to the top 20 countries with the worst CMR, we observe that **`{python} top_merged_rows`** countries share both characteristics, including (from the worst CMR): **Somalia**, **Chad**, **Central African Republic**, **South Sudan**, **Sierra Leone**, **Mali**, **Democratic Republic of the Congo**, **Guinea-Bissau**,  **Niger**,   and **Burkina Faso**. Intriguingly, all of these countries are located in sub-Saharan Africa.
+
+# Data download
+
+```{python}
+# Display the full dataset
+itables.show(
+    gdp_cm, caption="GDP and under-5 Child Mortality Rate (2023)", buttons=["csvHtml5"]
+)
+```
