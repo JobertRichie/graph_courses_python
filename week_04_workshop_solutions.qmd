@@ -1,0 +1,65 @@
+---
+title: "India TB Pathways Analysis"
+format: 
+    html:
+        embed-resources: true
+execute:
+    echo: false
+author: "The Graph Courses"
+---
+
+
+# Dataset Description
+
+*The India TB Pathways dataset is based on a study conducted in Vellore district, Tamil Nadu, India. It examines the pre-diagnostic costs and health-seeking behavior of 880 new adult pulmonary tuberculosis patients registered at Primary Health Centres (PHCs).*
+
+# Data Import and Overview
+
+```{python}
+import pandas as pd
+import plotly.express as px
+from itables import show
+
+# Load the dataset
+tb_pathways_df = pd.read_csv("week_04_workshop/data/india_tb_pathways_and_costs.csv")
+
+# Display the first few rows of the dataset
+show(tb_pathways_df.head())
+```
+
+# Geographic Context
+
+![Map of Tamil Nadu, India](images/tndistrict_1.png)
+
+# Relationship Between Age and Alcohol Use
+
+```{python}
+# Create a violin plot of Alcohol Use vs. Age
+fig = px.violin(
+    tb_pathways_df,
+    box=True,
+    points="all",
+    x="Age",
+    y="Alcohol",
+    title="Alcohol Use vs Age",
+    labels={"Age": "Age (years)", "Alcohol": "Alcohol Use (binary)"},
+)
+fig.show()
+```
+
+Insert appropriate interpretation here.
+
+# Highlighted Numbers with Inline Code (Optional Section)
+
+```{python}
+# Maximum first visit cost
+max_first_visit_cost = int(tb_pathways_df["first visit cost"].max())
+
+# Minimum first visit cost
+min_first_visit_cost = int(tb_pathways_df["first visit cost"].min())
+
+# Most common form of TB
+most_common_form_of_tb = tb_pathways_df["Form of TB"].mode()[0]
+```
+
+The maximum first visit cost was `{python} max_first_visit_cost`, and the minimum was `{python} min_first_visit_cost`. The most common form of TB in the dataset is `{python} most_common_form_of_tb`.

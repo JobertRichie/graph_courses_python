@@ -1,0 +1,167 @@
+
+# Imports
+
+```{python}
+import pandas as pd 
+pd.options.mode.copy_on_write = True
+```
+
+# Dataset
+
+```{python}
+counties = pd.read_csv("data/us_counties_data.csv")
+counties
+```
+
+
+```{python}
+#Creating a subset 
+area_df = counties[["county", "area_sq_miles", "pop_20"]]
+area_df
+```
+
+# Creating new variables
+
+```{python}
+area_df["area_sq_miles"] * 2.59
+```
+
+```{python}
+#We made a new variable with area in square kilometers
+area_df["area_sq_km"] = area_df["area_sq_miles"] * 2.59
+area_df
+```
+
+```{python}
+#New variable with area in hectares 1hectare = 100 sq_km
+area_df["area_hectares"] = area_df["area_sq_km"] * 100
+area_df
+```
+
+
+```{python}
+#Practice question
+## Using area_df, create a new column called 'area_acres' by multiplying the 'area_sq_miles' variable by 640. Store the result back into area_df and display the DataFrame
+
+area_df["area_acres"] = area_df["area_sq_miles"] * 640
+area_df
+```
+
+# Modifying an existing variable 
+
+
+```{python}
+area_df["area_sq_km"].round(1)
+```
+
+```{python}
+area_df["area_sq_km"] = area_df["area_sq_km"].round(1)
+area_df
+```
+
+```{python}
+#Practice question
+## Using the area_df dataset, round the 'area_acres' variable to one decimal place.
+```
+
+```{python}
+area_df["area_acres"] = area_df["area_acres"].round(1)
+area_df
+```
+
+# Calculating with multiple variables
+
+```{python}
+# Calculating the population density 
+area_df["pop_20"] / area_df["area_sq_km"]
+```
+
+
+```{python}
+#Creating a new variable 
+area_df["pop_per_sq_km"] = area_df["pop_20"] / area_df["area_sq_km"]
+area_df
+```
+
+```{python}
+#Round the result to one decimal place
+area_df["pop_per_sq_km"] = (area_df["pop_20"] / area_df["area_sq_km"]).round(1)
+area_df
+```
+```{python}
+# Sort the values to identify the most densed counties
+area_df = area_df.sort_values(
+    by = "pop_per_sq_km",ascending = False
+)
+area_df
+```
+
+```{python}
+#Practice question
+## Use the 'counties' dataset to calculate the percentage of foreign_born residents in each county. Remeber to multiply your proportion by 100. The variable 'foreign_born_num' shows the number of foreign_born residents and pop_20 shows the total population.
+
+counties["foreign_born_pct"] = (counties["foreign_born_num"] / counties["pop_20"]) * 100
+counties
+```
+
+```{python}
+#Counties with the highest percentages of foreign_born residents
+counties.sort_values(
+    by = "foreign_born_pct",
+    ascending = False
+)
+# The two counties with the highest percentages of foreign-born residents are 'Miami-Dade, FL' (53.9%) and 'Qeens, NY' (46.9%).
+```
+
+# Creating Bolean variables
+
+```{python}
+changes_df = counties[["county", "pop_change_2010_2020", "pct_emp_change_2010_2021"]]
+changes_df
+```
+
+```{python}
+changes_df["pop_increase"] = changes_df["pop_change_2010_2020"] > 0
+changes_df
+```
+
+```{python}
+changes_df["emp_increase"] = changes_df["pct_emp_change_2010_2021"] > 0
+changes_df
+```
+
+
+```{python}
+# Counties where the population increased but employment decreased
+changes_df.query(
+    "pop_increase == True & emp_increase == False"
+)
+```
+
+```{python}
+#Equal to
+changes_df.query(
+    "pop_increase & ~(emp_increase)"
+)
+```
+
+```{python}
+#Practice question
+## Create a Bolean variable 'foreign_born_pct_gt_30'that is True if the percentage is greater than 30%. 
+## When you are done, query the DataFrame to show only counties where the foreign_born_pct_gt_30 is True. You should get 24 rows
+
+counties["foreign_born_pct_gt_30"] = counties["foreign_born_pct"] > 30
+counties
+```
+
+```{python}
+counties.query(
+    "foreign_born_pct_gt_30 == True"
+)
+```
+
+# Copy on Write Warning
+
+```{python}
+pd.options.mode.copy_on_write = True
+```

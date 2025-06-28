@@ -1,0 +1,107 @@
+---
+title: "India TB Pathways Analysis"
+author: "Jobert Richie Nansseu"
+format: 
+    html:
+        embed-resources: true
+execute: 
+    echo: false
+---
+
+```{python}
+#Importing the libraries
+import pandas as pd
+import plotly.express as px
+import itables as it
+```
+
+# Description of the dataset: India TB Pathways Analysis
+
+The India TB Pathways dataset is based on a study conducted in Vellore district, Tamil Nadu, India. It examines the pre-diagnostic costs and health-seeking behavior of 880 new adult pulmonary tuberculosis patients registered at Primary Health Centres (PHCs).
+
+## Table showing the entire dataset
+
+```{python}
+## Loading the dataset into Python
+india_tb = pd.read_csv("week_04_workshop/data/india_tb_pathways_and_costs.csv")
+it.show(india_tb)
+```
+
+## Spatial representation of the different districts of the Tamil Nadu State, India 
+
+![Tamil Nadu map](week_04_workshop/images/tndistrict_1.png)
+
+The following map represents the Tamil Nadu State located in the South of India. It comprises 38 districts and covers an area of 130 000 km square with around 83 million inhabitants. Vellore district is located in the Far-North segment of the State.
+
+# Results of some bivariate analysis
+## Distribution of age by sex
+
+```{python}
+fig1 = px.violin(india_tb,
+x = "Sex",
+y = "Age",
+color = "Sex",
+box = True,
+color_discrete_sequence = ["forestgreen", "red"],
+points = "all",
+title = "Distribution of Age by Sex"
+)
+fig1.show()
+```
+
+From the graph we easily see that females seem younger than males. Indeed the males' median age was 50 years (IQR: 39-60) vs 40 years (IQR: 26.5-49.5) for females.
+
+## Education and employment
+
+```{python}
+fig2 = px.histogram(
+    data_frame = india_tb,
+    x = "Education",
+    color = "Employment",
+    barnorm = "percent",
+    text_auto = ".1f",
+    title = "Proportion of employment per education level"
+)
+fig2.show()
+```
+
+The highest proportion of those currently employed were reported among patients of middle education level (86.1%) followed by Secondary level (85.2%). The highest proportion of those not working (currently unemployed) was recorded among the Higher Secondary level (36.5%).
+
+## BMI and diabetes
+
+```{python}
+fig3 = px.violin(india_tb,
+y = "bmi",
+x = "Diabetes",
+color = "Diabetes",
+box = True,
+points = "all",
+color_discrete_sequence = [
+    "#e03dd5", "#f5a638"],
+title = "Distribution of BMI per diabetes status")
+fig3.show()
+```
+
+Patients with diabetes have higher BMI than those wothout, with a median of 19.3 (IQR: 16.5-21.7) vs 16.6 (IQR 15.1-23.3).
+
+## Highlighting key numbers with inline code
+
+
+```{python}
+# key numbers 
+min_age = int(india_tb.Age.min())
+median_age = int(india_tb.Age.median())
+max_age = int(india_tb.Age.max())
+
+min_bmi = int(india_tb.bmi.min())
+median_bmi = int(india_tb.bmi.median())
+max_bmi = int(india_tb.bmi.max())
+
+mode_edu = india_tb.Education.mode()[0]
+mode_sex = india_tb.Sex.mode()[0]
+```
+
+Ages of participants ranged from `{python} min_age` to `{python} max_age` years, with a median of **`{python} median_age`** years. The prevailing sex modality was "*`{python} mode_sex`*". In addition, the education level modality that was mostly represented was "*`{python} mode_edu`*".
+
+The body mass index (BMI) which is a combination of weight and height ranged from a minimum value of `{python} min_bmi` to a maximum value of `{python} max_bmi`, with a median value of **`{python} median_bmi`**.
+

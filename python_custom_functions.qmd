@@ -1,0 +1,277 @@
+# Imports
+
+```{python}
+import pandas as pd 
+import numpy as np 
+import vega_datasets as vd
+```
+# Basics of a function
+
+```{python}
+def pounds_to_kg(pounds):
+    return pounds * 0.4536
+# 'def' defines the function 
+# 'pounds_to_kg' is the name of the function
+# '(pounds)' in parentheses is the custom name we wnat the argument to be; it can take any name
+```
+
+```{python}
+pounds_to_kg(150)
+pounds_to_kg(pounds = 150)
+```
+
+```{python}
+#Creating the function with an intermediate object names kg
+def pds_to_kg(pounds):
+    kg = pounds * 0.4536
+    return kg
+```
+
+```{python}
+pds_to_kg(150)
+```
+
+```{python}
+#Using the function inside a DataFrame
+pounds_df = pd.DataFrame({
+    "pounds": [150, 200, 250]
+})
+pounds_df
+```
+
+```{python}
+pds_to_kg(pounds_df["pounds"])
+```
+
+```{python}
+#Creating a new column 
+pounds_df["kg"] = pds_to_kg(pounds_df["pounds"])
+pounds_df
+```
+
+
+```{python}
+# Practice question
+## Create a function called 'years_to_months' that trasforms the variable age in years to months
+```
+
+```{python}
+riots_df = vd.data.la_riots()
+riots_df
+```
+
+```{python}
+def years_to_months(age):
+    age_months = age * 12
+    return age_months
+```
+
+```{python}
+riots_df["age_months"] = years_to_months(riots_df["age"])
+riots_df
+```
+# Functions with multiple arguments
+
+```{python}
+def calc_calories(carb_grams, protein_grams, fat_grams):
+    result = carb_grams * 4 + protein_grams * 4 + fat_grams * 9
+    return result
+```
+
+```{python}
+calc_calories(carb_grams = 50,
+protein_grams = 25, fat_grams = 15
+)
+```
+
+```{python}
+#Does not work due to missing argument
+## calc_calories(carb_grams = 50, protein_grams = 25)
+```
+
+```{python}
+#Fixing the previous error 
+##Default arguments
+def calc_calories_2(carb_grams = 0, protein_grams = 0, fat_grams = 0):
+    result = carb_grams * 4 + protein_grams * 4 + fat_grams * 9
+    return result
+```
+
+```{python}
+calc_calories_2(carb_grams = 50)
+```
+
+```{python}
+food_df = pd.DataFrame({
+    "food": ["Apple", "Avocado"],
+    "carb": [25, 10],
+    "protein": [0, 1],
+    "fat": [0, 14]
+})
+food_df
+```
+
+```{python}
+calc_calories_2(carb_grams = food_df["carb"], protein_grams = food_df["protein"],
+fat_grams = food_df["fat"]
+)
+```
+
+```{python}
+food_df["calories"] = calc_calories_2(carb_grams = food_df["carb"], protein_grams = food_df["protein"],
+fat_grams = food_df["fat"]
+)
+food_df
+```
+
+```{python}
+# Practice question
+## Create a function named 'calc_bmi' that calculates the body mass index for one or more individuals, then apply the function by running the code chunck further below.
+## The formuma for BMI is weight (kg) divided by height (m) squared
+```
+
+```{python}
+def calc_bmi(weight = 0, height = 0):
+    bmi = weight / (height * height)
+    return bmi
+```
+
+```{python}
+calc_bmi(80, 1.7)
+```
+
+```{python}
+bmi_df = pd.DataFrame({
+    "Weight": [70, 80, 100], #in kg
+    "Height": [1.7, 1.8, 1.2] #in meters
+})
+bmi_df
+```
+
+```{python}
+bmi_df["BMI"] = calc_bmi(weight = bmi_df["Weight"], height = bmi_df["Height"])
+bmi_df
+```
+
+# Introduction to conditionals if, elif, else
+
+```{python}
+def class_num(num):
+    if num > 0:
+        return "Positive"
+    elif num < 0:
+        return "Negative"
+    elif num == 0:
+        return "Zero"
+    else:
+        return "Invalid"
+
+print(class_num(5))
+print(class_num(-5))
+print(class_num(0))
+print(class_num(np.nan))
+```
+
+```{python}
+#Using on a dataframe
+num_df = pd.DataFrame({
+    "num": [10, -5, 0]
+})
+num_df
+```
+
+```{python}
+#This does not work
+## class_num(num_df["num"])
+```
+
+```{python}
+#Vectorizing the function 
+class_num_vec = np.vectorize(class_num)
+```
+
+```{python}
+class_num_vec(num_df["num"])
+num_df["Category"] = class_num_vec(num_df["num"])
+num_df
+```
+
+```{python}
+# Practice question
+# Create a grading function
+## -If grade is 85 or above, the category is "Excellent";
+## -If grade is between 60 and 84, the category is "Pass";
+## -If the grade is below 60, the category is "Fail";
+## -If the grade is negative or invalid, return "Invalid grade"
+```
+
+```{python}
+def grading(grade):
+    if grade >= 85:
+        return "Excellent"
+    elif (grade >= 60 and grade < 85):
+        return "Pass"
+    elif(grade < 60 and grade >= 0):
+        return "Fail"
+    else:
+        return "Invalid grade"
+
+print(grading(90))
+print(grading(70))
+print(grading(52))
+print(grading(-5))
+```
+
+```{python}
+grading_vec = np.vectorize(grading)
+```
+
+```{python}
+grading_vec(num_df["num"])
+```
+
+```{python}
+grading_vec([70, 84, 60, 10, -5, 100, 85])
+```
+
+```{python}
+# Practice question
+## Try writing a function that categorizes age into different life steps as described earlier. You should use the following criteria:
+## -If the age is under 18, the category is "Minor;
+# ## -If the age is greater or equal to 18 and below 65, the category is "Adult";
+## -If the age is greater or equal to 65, the category is "Senir";
+## -If the age is negative or invalid, return "Invalid age"
+## Use it on the "riots_df" DataFrame printed below to create a new column called "Age_category"
+```
+
+
+```{python}
+def age_category(age):
+    if age < 18 and age >= 0:
+        return "Minor"
+    elif age >=18 and age < 65:
+        return "Adult"
+    elif age >= 65:
+        return "Senior"
+    else:
+        return "Invalid age"
+
+print(age_category(-2))
+print(age_category(15))
+print(age_category(45))
+print(age_category(70))
+```
+
+```{python}
+#Vectorizing the function above created
+age_category = np.vectorize(age_category)
+#Creating a new column age_category
+riots_df["Age_category"] = age_category(riots_df["age"])
+riots_df
+```
+
+# Other ways to apply a similar recoding on a dataframe
+- apply()
+- np.select()
+- np.where()
+- pd.cut()
